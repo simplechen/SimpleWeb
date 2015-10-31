@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:jee="http://www.springframework.org/schema/jee" xmlns:aop="http://www.springframework.org/schema/aop"
+	xmlns:tx="http://www.springframework.org/schema/tx" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:p="http://www.springframework.org/schema/p"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.0.xsd 
+	http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-3.0.xsd 	
+	http://www.springframework.org/schema/jee http://www.springframework.org/schema/jee/spring-jee-3.0.xsd 
+	http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-3.0.xsd ">
+
+	<!-- start 定时任务执行表 -->
+	<bean id="checkOnLineUserJob" class="me.laochen.job.CheckOnLineUserJob"/>
+	<bean id="checkOnLineUserJobTask"
+		class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+		<property name="targetObject" ref="checkOnLineUserJob" />
+		<property name="targetMethod">
+			<value>execute</value>
+		</property>
+	</bean>	
+
+	<!-- 格式: [秒] [分] [小时] [日] [月] [周] [年] 每隔1分钟执行一次 0 0/1 * * * ? 每隔5分钟执行一次 
+		0 0/5 * * * ? 每隔10s执行一次 0/10 * * * * ? -->
+	<bean id="checkOnLineUserJobTrigger" class="org.springframework.scheduling.quartz.CronTriggerBean">
+		<property name="jobDetail" ref="checkOnLineUserJobTask" />
+		<property name="cronExpression">
+			<!-- --><value>*/10 * * * * ?</value> 
+			<!-- 每月的1号开始执行 -->
+			<!-- <value>0 0 0 1 * ?</value> -->			
+			<!-- <value> 0 0/10 8,9 ? * MON-FRI</value> -->
+			
+			<!-- 每三分钟检查一次在线用户
+			<value>0 */1 * * * ?</value> -->
+		</property>
+	</bean>
+	
+
+	<!-- 真正开始执行任务的地方 -->
+	<bean class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
+		<property name="quartzProperties">
+			<props>
+				<prop key="org.quartz.threadPool.threadCount">2</prop>
+			</props>
+		</property>
+		<property name="triggers">
+			<list>				
+				<ref bean="checkOnLineUserJobTrigger" />
+			</list>
+		</property>
+	</bean>
+	<!-- end 定时任务执行表 -->
+</beans>
